@@ -15,14 +15,21 @@ router.get("/", async (req, res, next) => {
 router.get("/:code", async (req, res, next) => {
   try {
     const code = req.params.code;
-    const results = await db.query(
+    const companyResults = await db.query(
       `SELECT name, description FROM companies WHERE code = $1;`,
       [code]
     );
-    if (results.rows.length === 0) {
+    if (companyResults.rows.length === 0) {
       throw new ExpressError(`Company of code: ${code} does not exist`, 404);
     }
-    return res.json({ company: results.rows[0] });
+    const invoiceResults = await db.query(
+      `SELECT id, amt, paid, add_date,paid_date FROM invoices WHERE comp_code = $1;`,
+      [code]
+    );
+    const company = companyResults.rows[0];
+    company.invoices = invoiceResults.rows;
+
+    return res.json(company);
   } catch (e) {
     return next(e);
   }
@@ -62,13 +69,17 @@ router.patch("/:code", async (req, res, next) => {
 
 router.delete("/:code", async (req, res, next) => {
   try {
-    const result = await db.query("DELETE FROM companies WHERE code =$1 ", [
-      req.params.code,
-    ]);
-    if (result.rows[0].length === 0) {
-      throw new ExpressError(`Company of code: ${code} does not exist`, 404);
+    const result = await db.query(
+      "DELETE FROM companies WHERE code =$1 RETURNING code",
+      [req.params.code]
+    );
+    if (result.rows.length === 0) {
+      throw new ExpressError(
+        `Company of code: ${req.params.code} does not exist`,
+        404
+      );
     }
-    return res.json({ status: "deleted" });
+    return res.json({ status: "company deleted" });
   } catch (e) {
     return next(e);
   }
