@@ -1,7 +1,6 @@
 /** BizTime express application. */
 
 const express = require("express");
-
 const app = express();
 const ExpressError = require("./expressError");
 
@@ -9,15 +8,6 @@ app.use(express.json());
 
 const companyRoutes = require("./routes/companies.js");
 app.use("/companies", companyRoutes);
-
-app.get("/", async (req, res, next) => {
-  try {
-    const results = await db.query(`SELECT name, description FROM companies;`);
-    return results.json(results.rows);
-  } catch (e) {
-    return next(e);
-  }
-});
 
 /** 404 handler */
 
